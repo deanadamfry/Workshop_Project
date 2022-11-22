@@ -25,7 +25,6 @@ public:
 private:
 
 	// Tile Textures
-	
 	SDL_Rect src, dest;
 	SDL_Texture* empty;
 	SDL_Texture* wall;

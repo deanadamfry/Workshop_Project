@@ -22,12 +22,12 @@ Mix_Music* music = NULL;
 Mix_Chunk* shootSound = NULL;
 
 //==========================================
-//Game Objects
+// Game Objects
 PlayerInput playerInput;
 Level* map;
 AI* gameAI;
 
-// Create Squads
+// Create  Squads
 Squad* squadYellow;
 Squad* squadRed;
 
@@ -50,15 +50,17 @@ void Game::createGameObjects()
 
 	// Create Teams (Max units = 50)
 	// name, tileType, start x y 
-	squadRed = new Squad("Red Team", 6, 30, 10);
-	squadRed->createUnits(map, 10, 2); // initial spawn amount and initial state
-
 	squadYellow = new Squad("Yellow Team", 5, 10, 10);
-	squadYellow->createUnits(map, 10, 1);
+	squadYellow->createUnits(map, 5, 2); // level, spawn amount & state
+	activeSquads++;  // add to the active squads 
 
-	// Create other Object ------------------------------------------------
+	squadRed = new Squad("Red Team", 6, 25, 5);
+	squadRed->createUnits(map, 5, 3); 
+	activeSquads++; 
 
-	// show mouse click pos with target Marker
+	// Create other Objects ------------------------------------------------
+	
+	// Show mouse click pos with target Marker
 	targetMarker = new Item("assets/images/Square_Purple.png", 16, 16, 8);
 }//---
 
@@ -75,26 +77,66 @@ void Game::playAgainScreen()
 }//---
 
 
+
+
 //=================================================================================
 
+int unitSelected = -1;
+
 void Game::updateGameObjects()
-{	
+{
 	int targetTileX = -1, targetTileY = -1;
 
-	// Move the target Marker
+
+	// When L mouse is clicked
 	if (playerInput.mouseL)
 	{
+		// Move the target Marker
+		targetMarker->x = playerInput.mouseX;
+		targetMarker->y = playerInput.mouseY;		
+
+		// Get Tile Clicked on
+		targetTileX = gameAI->findTileXFromMouseX(map, playerInput.mouseX);
+		targetTileY = gameAI->findTileYFromMouseY(map, playerInput.mouseY);
+
+		// Get Unit Clicked on
+		unitSelected = -1; // reset selection
+		unitSelected = squadRed->findUnit(targetTileX, targetTileY);
+		if (unitSelected < 600) unitSelected = squadYellow->findUnit(targetTileX, targetTileY);
+		if (unitSelected > -1) std::cout << "\n unit: " << unitSelected;
+	}
+
+	// When R mouse is clicked
+	if (playerInput.mouseR)
+	{
+		std::cout << "\n RMouse";
+		// Move the target Marker
 		targetMarker->x = playerInput.mouseX;
 		targetMarker->y = playerInput.mouseY;
 
 		// Get Tile Clicked on
 		targetTileX = gameAI->findTileXFromMouseX(map, playerInput.mouseX);
 		targetTileY = gameAI->findTileYFromMouseY(map, playerInput.mouseY);
-	}	
-	
+
+		if (unitSelected > 500 && unitSelected < 600) // Yellow
+		{
+			int unit = unitSelected - 501;
+			squadYellow->setTarget(unit, targetTileX, targetTileY);
+		}
+		else if (unitSelected > 600 && unitSelected < 700) // Red
+		{	
+			int unit = unitSelected - 601;
+			squadRed->setTarget(unit, targetTileX, targetTileY);
+		}
+	}
+
+
+
+
 	//  Update Sqauds  -------- Send each squad map and mouse
 	squadYellow->update(map, targetTileX, targetTileY, playerInput.mouseL);
 	squadRed->update(map, targetTileX, targetTileY, playerInput.mouseL);
+
 
 
 	// Modify Display
@@ -106,7 +148,7 @@ void Game::updateGameObjects()
 
 void Game::adjustMapDisplay()
 {
-	// key for zoom in (= / +)  out (-)
+	// Key for zoom in (= / +)  out (-)
 	if (playerInput.keyPressed == SDLK_EQUALS || playerInput.mouseWheelUp == true) map->setMapTileSize(+1);
 
 	if (playerInput.keyPressed == SDLK_MINUS || playerInput.mouseWheelDown == true) map->setMapTileSize(-1);
@@ -128,7 +170,7 @@ void Game::render()
 	// Map Tiles
 	map->drawMap();
 
-	// objects
+	// Objects
 	targetMarker->render();
 
 	updateGUI();
@@ -144,6 +186,7 @@ void Game::handleEvents() // Updates Player Input
 	// Reset Inputs
 	playerInput.keyPressed = NULL;
 	playerInput.mouseL = false;
+	playerInput.mouseR = false;
 	playerInput.mouseWheelUp = false;
 	playerInput.mouseWheelDown = false;
 
@@ -163,7 +206,8 @@ void Game::handleEvents() // Updates Player Input
 		break;
 
 	case SDL_MOUSEBUTTONDOWN:
-		playerInput.mouseL = true;
+		if (playerInputEvent.button.button == SDL_BUTTON_LEFT) playerInput.mouseL = true;
+		if (playerInputEvent.button.button == SDL_BUTTON_RIGHT) playerInput.mouseR = true;
 		break;
 
 	case SDL_MOUSEWHEEL:
@@ -189,17 +233,22 @@ void Game::updateGUI()
 	std::string  screenText;
 	int textW = 0, textH = 0;
 
-	// SuqaD Data to Text
+	// Squad Data to Text
 	screenText = "Team: Red Sqaud ";
 	screenText += " - Res: " + std::to_string(squadRed->getResources());
 	screenText += " - Units: " + std::to_string(squadRed->getActiveUnits());
 
-	screenText += "\nTeam: Yel Sqaud ";
+	screenText += "\nTeam:  Yel Sqaud ";
 	screenText += " - Res: " + std::to_string(squadYellow->getResources());
 	screenText += " - Units: " + std::to_string(squadYellow->getActiveUnits());
 
+	screenText += "\n ----------";
+	screenText += "\n Selected: " + std::to_string(unitSelected);
+	screenText += "\n Unit States: " ;
+
+
 	// Create Text Texture
-	//textSurface = TTF_RenderText_Blended(font, screenText.c_str(), textColour);
+	// textSurface = TTF_RenderText_Blended(font, screenText.c_str(), textColour);
 	textSurface = TTF_RenderText_Blended_Wrapped(font, screenText.c_str(), textColour, 0);
 
 	textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
@@ -261,12 +310,12 @@ void Game::clean()
 	std::cout << "************************* \nClearing Memory \n";
 	SDL_Delay(1000);
 
-	//AUDIO
+	// AUDIO
 	Mix_FreeMusic(music);
 	Mix_FreeChunk(shootSound);
 	Mix_CloseAudio();
 
-	// Fonts
+	// FONTS
 	TTF_CloseFont(font);
 	TTF_Quit();
 

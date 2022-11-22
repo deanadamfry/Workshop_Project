@@ -61,7 +61,7 @@ int level1[50][60] = {
 
 Level::Level()
 {
-	// Load tile images
+	// Load Tile Images
 	empty = TextureManager::LoadTexture("assets/images/Square_Grey.png");
 	wall = TextureManager::LoadTexture("assets/images/Circle_Green.png");
 	water = TextureManager::LoadTexture("assets/images/Square_Blue.png");
@@ -104,6 +104,7 @@ int Level::getTile(int x, int y)
 
 bool Level::setTile(int x, int y, int pTileType)
 {
+	// x = column, y = row
 	map[y][x] = pTileType;
 	return true;
 };

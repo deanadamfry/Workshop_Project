@@ -49,9 +49,10 @@ void Character::update(Level* pMap)
 		wander(pMap);
 		break;
 	case 3: // Chase Target
-		chaseTarget(pMap);
+		chaseTarget2(pMap);
 		break;
-	case 4: // Patrol
+	case 4: // RandomMove
+		avoid(pMap);
 		break;
 	}
 
@@ -128,6 +129,139 @@ void Character::addResource(int pResAmount)
 
 
 
+
+//=================================================================================
+
+
+void Character::avoid(Level* pMap)
+{
+	if (!isBusy)
+	{
+		// Create Random Direction
+		if (nextMoveTime < SDL_GetTicks())
+		{
+
+			std::cout << "\n trying to avoid";
+
+			// Direction: 0 up 2: right: 4: down 6: left 
+			int direction = rand() % 8;
+
+			switch (direction)
+			{
+			case 0: // Up
+				nextX = currentX;
+				nextY = currentY - 1;
+				break;
+			case 1: // up Right
+				nextX = currentX + 1;
+				nextY = currentY - 1;
+				break;
+			case 2: // Right
+				nextX = currentX + 1;
+				nextY = currentY;
+				break;
+			case 3: // Right Down
+				nextX = currentX + 1;
+				nextY = currentY + 1;
+				break;
+			case 4: // Down
+				nextX = currentX;
+				nextY = currentY + 1;
+				break;
+			case 5: // Down Left
+				nextX = currentX - 1;
+				nextY = currentY + 1;
+				break;
+			case 6: // Left
+				nextX = currentX - 1;
+				nextY = currentY;
+				break;
+			case 7: // Up Left
+				nextX = currentX - 1;
+				nextY = currentY - 1;
+				break;
+			}
+
+			// Check if next Position is Empty
+			if (pMap->getTile(nextX, nextY) == 0)
+			{
+				// Clear Old position and set new
+				pMap->setTile(currentX, currentY, 0);
+				pMap->setTile(nextX, nextY, tileType);
+
+				// Update Current Position
+				currentX = nextX;
+				currentY = nextY;
+			}
+
+			// Update Move coolDown
+			nextMoveTime = SDL_GetTicks() + 1000 * 1 / speed;
+
+
+			// set back to chase;
+			state = 3;
+		}
+	}
+
+
+
+
+
+}//---
+
+
+
+
+void Character::chaseTarget2(Level* pMap)
+{
+	if (!isBusy)
+	{
+		if (nextMoveTime < SDL_GetTicks())
+		{
+			// Check if we are close to target
+			if (abs(targetX - currentX) < 2 && abs(targetY - currentY) < 2)
+			{
+				setState(0);  // set to idle / stop chasing
+			}
+			else // we are not close
+			{
+				// Use Trig to calculate the next tile in a straight line to target 
+
+				// Calculate angle to target
+				int dX = targetX - currentX;
+				int dY = targetY - currentY;
+				float angle = atan2(dY, dX); // this is in radians
+
+				// Calcuate next X & Y				
+				nextX = currentX + round(1.4 * cos(angle));
+				nextY = currentY + round(1.4 * sin(angle));
+			}
+
+			// Check if next Position is Empty
+			if (pMap->getTile(nextX, nextY) == 0)
+			{
+				// Clear Old position and set new
+				pMap->setTile(currentX, currentY, 0);
+				pMap->setTile(nextX, nextY, tileType);
+
+				// Update Current Position
+				currentX = nextX;
+				currentY = nextY;
+			}
+			else
+			{
+				// avoid somehow
+				if (state != 0) state = 4;
+			}
+
+			// Update Move coolDown
+			nextMoveTime = SDL_GetTicks() + 1000 * 1 / speed;
+		}		
+	}
+}//---
+
+
+
 //=================================================================================
 void Character::chaseTarget(Level* pMap)
 {
@@ -171,6 +305,11 @@ void Character::chaseTarget(Level* pMap)
 		}
 	}
 }//---
+
+void Character::killTarget(Level* pMap)
+{
+
+}
 
 
 //=================================================================================
@@ -326,10 +465,9 @@ void Character::wander(Level* pMap)
 
 
 //=================================================================================
-
 // Squad Methods
 
-Squad::Squad(const char* pName, int pType, int pHomeX, int pHomeY)// Constructor
+Squad::Squad(const char* pName, int pType, int pHomeX, int pHomeY) // Constructor
 {
 	// Set display Name
 	name = pName;
@@ -358,9 +496,10 @@ void Squad::createUnits(Level* pMap, int pSpawnAmount, int pInitialState)
 			int xPos = homeX + i;
 			int yPos = homeY + i;
 
-			// Set initial values		
+			// Set initial values
+			units[i]->setUnitID(tileType * 100 + i + 1);
 			units[i]->setType(tileType); // map tile type 
-			units[i]->setSpeed(rand() % 8); // Random Set Speed
+			units[i]->setSpeed(3);
 			units[i]->setState(pInitialState);
 			units[i]->setHeading(rand() % 8); // random initial Direction
 
@@ -372,7 +511,7 @@ void Squad::createUnits(Level* pMap, int pSpawnAmount, int pInitialState)
 					pMap->setTile(xPos, yPos, tileType);
 					units[i]->isActive = true;
 					units[i]->setPosition(xPos, yPos);
-					std::cout << i << " unit spawned  ";
+					std::cout << units[i]->getUnitID() << " unit spawned  ";
 
 					// Update Squad Stats
 					activeUnits++;
@@ -393,9 +532,7 @@ void Squad::createUnits(Level* pMap, int pSpawnAmount, int pInitialState)
 }//---
 
 //=================================================================================
-
-
-//  Squad behaviours
+// Squad behaviours
 void Squad::manageSquad()
 {
 	// Only check these states every delay time
@@ -409,9 +546,8 @@ void Squad::manageSquad()
 			if (units[i]->getIsActive()) // only check active units
 			{
 
-				// ---------------------------- Resources 
-
-				// check Unit Resources and Add to squad resources if any found
+				// ------------- Resources
+				//check Unit Resources and Add to squad resources if any found
 				int resourcesFound = units[i]->getResources();
 				if (resourcesFound > 0)
 				{
@@ -419,44 +555,20 @@ void Squad::manageSquad()
 					units[i]->addResource(-resourcesFound);
 					units[i]->setState(0);
 				}
-
-				// ---------------------------- Chase Speed
-				if (units[i]->getState() == 3)
-				{
-					units[i]->setSpeed(10);
-				}
-				else if (units[i]->getState() == 2)
-				{
-					units[i]->setSpeed(rand() % 8);
-				}
-
 			}
 
 			// ---------------------------- Check for idle units
 			if (units[i]->getState() == 0)
 			{
-				std::cout << std::endl << getName() << " UNIT: " << i << " is idle";
-
-				// add Something to do with the idle units
-
+			//	std::cout << std::endl << getName() << " UNIT: " << i << " is idle";
 			}
 
 			// ---------------------------- XXXXXXXX 
 			// something else only needed to be checked periodlically
 		}
 	}
-
-	// Spawn unit after time period
-	Uint64 spawn = SDL_GetTicks64() + 1000;
-	Uint64 cooldown = SDL_GetTicks64() + 30000;
-	if (spawn == cooldown)
-	{
-		spawn = SDL_GetTicks64() + 1000;
-
-	}
-
-	// check the amount of units assigned to a role and ressaign
-}
+	
+}//---
 
 
 
@@ -465,18 +577,6 @@ void Squad::manageSquad()
 void Squad::update(Level* pMap, int pTargetX, int pTargetY, bool pLMouse)
 {
 	manageSquad();
-
-	// Set Target if mouse clicked
-	if (pLMouse)
-	{	// Check the tile is valid - On the Board 
-		if (pTargetX > 0 && pTargetX < BOARD_WIDTH && pTargetY > 0 && pTargetY < BOARD_HEIGHT)
-		{
-			for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
-			{
-				if (units[i]->getIsActive()) units[i]->setTarget(pTargetX, pTargetY);
-			}
-		}
-	}
 
 	// Update Active units
 	for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
@@ -489,10 +589,23 @@ void Squad::update(Level* pMap, int pTargetX, int pTargetY, bool pLMouse)
 //=================================================================================
 // Squad Getters and Setters 
 
+
+void Squad::setTarget(int pUnitID, int pTileX, int pTileY)
+{
+	std::cout << "\n setting unit: " << pUnitID << " to " << pTileX << " " << pTileY;
+
+	if (units[pUnitID]->getIsActive())
+	{
+		units[pUnitID]->setState(3); // set to chase
+		units[pUnitID]->setTarget(pTileX, pTileY);
+	}
+}
+
+
 int Squad::getResources()
 {
 	return resources;
-};
+}
 
 void Squad::addResource(int pResAmount)
 {
@@ -512,4 +625,26 @@ void Squad::addActiveUnits(int pUnitsAdded)
 	activeUnits += pUnitsAdded;
 }
 
+
+//=================================================================================
+// Squad Getters and Setters 
+int Squad::findUnit(int pTileX, int pTileY)
+{
+	int unitFound = -1;
+
+	// Update Active units
+	for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
+	{
+		if (units[i]->getIsActive())
+		{
+			if (units[i]->getCurrentX() == pTileX && units[i]->getCurrentY() == pTileY)
+			{
+				unitFound = units[i]->getUnitID(); // use getter for unit ID
+				break;
+			}
+		}
+	}
+
+	return (unitFound);
+}
 

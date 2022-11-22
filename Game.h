@@ -53,6 +53,8 @@ public:
 private:
 	bool isRunning = false;
 	SDL_Window* gameWindow = nullptr;
+	int activeSquads = 0;
+
 
 }; 
 //============
