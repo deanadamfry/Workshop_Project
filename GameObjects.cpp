@@ -1,6 +1,5 @@
 #include"GameObjects.h"
 #include"TextureManager.h"
-#include "Levels.h"
 
 
 
@@ -14,12 +13,31 @@ void GameObject::render()
 	SDL_RenderCopy(Game::renderer, spriteTexture, &srcRect, &destRect);
 }//----
 
+ //=================================================================================
+
+
+Item::Item(const char* textureSheet, int pX, int pY, int pSpriteSize)
+{
+	spriteTexture = TextureManager::LoadTexture(textureSheet);
+
+	// Source Tilesheet pos and size
+	srcRect.h = SPRITE_TEX_SIZE;
+	srcRect.w = SPRITE_TEX_SIZE;
+	srcRect.x = 0;
+	srcRect.y = 0;
+
+	// Target Sprite Size & pos
+	destRect.h = pSpriteSize;
+	destRect.w = pSpriteSize;
+}//---
 
 //=================================================================================
 
 
 void Character::update(Level* pMap)
 {
+	// Call Behaviours based on state 
+
 	switch (state)
 	{
 	case 0: // Idle
@@ -40,13 +58,23 @@ void Character::update(Level* pMap)
 }//---
 
 //=================================================================================
-
+// Constructor
 Character::Character(int pX, int pY)
 {
 	currentX = pX;
 	currentY = pY;
 }//---
+
+
 //=================================================================================
+
+void Character::setPosition(int pX, int pY)
+{
+	currentX = pX;
+	currentY = pY;
+}//---
+
+
 void  Character::setType(int pType)
 {
 	tileType = pType;
@@ -76,6 +104,7 @@ void Character::setHeading(int pDirection)
 {
 	heading = pDirection;
 }
+
 int Character::getHeading()
 {
 	return heading;
@@ -86,6 +115,18 @@ void Character::setTarget(int pTargetX, int pTargetY)
 	targetX = pTargetX;
 	targetY = pTargetY;
 }
+
+int  Character::getResources() 
+{
+	return resources;
+}
+
+void Character::addResource(int pResAmount)
+{ 
+	resources += pResAmount; 
+}
+
+
 
 //=================================================================================
 void Character::chaseTarget(Level* pMap)
@@ -242,9 +283,15 @@ void Character::wander(Level* pMap)
 				break;
 			}
 
-			// Check if next Position is Empty
-			if (pMap->getTile(nextX, nextY) == 0)
+			// Check if next Position is Empty or Resource
+			if (pMap->getTile(nextX, nextY) == 0 || pMap->getTile(nextX, nextY) == 3)
 			{
+				if (pMap->getTile(nextX, nextY) == 3)
+				{
+					std::cout << "\n resource found";
+					resources++;
+				}
+
 				// Clear Old position and set new
 				pMap->setTile(currentX, currentY, 0);
 				pMap->setTile(nextX, nextY, tileType);
@@ -252,6 +299,7 @@ void Character::wander(Level* pMap)
 				// Update Current Position
 				currentX = nextX;
 				currentY = nextY;
+
 			}
 			else
 			{
@@ -273,25 +321,195 @@ void Character::wander(Level* pMap)
 	}
 }//---
 
-	//=================================================================================
 
 
-
-
-Item::Item(const char* textureSheet, int pX, int pY, int pSpriteSize)
-{
-	spriteTexture = TextureManager::LoadTexture(textureSheet);
-
-	// Source Tilesheet pos and size
-	srcRect.h = SPRITE_TEX_SIZE;
-	srcRect.w = SPRITE_TEX_SIZE;
-	srcRect.x = 0;
-	srcRect.y = 0;
-
-	// Target Sprite Size & pos
-	destRect.h = pSpriteSize;
-	destRect.w = pSpriteSize;
-}//---
 
 
 //=================================================================================
+
+// Squad Methods
+
+Squad::Squad(const char* pName, int pType, int pHomeX, int pHomeY)// Constructor
+{
+	// Set display Name
+	name = pName;
+	tileType = pType;
+	homeX = pHomeX;
+	homeY = pHomeY;
+
+	// Create unit Object but do not activate them
+	for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
+	{
+		units[i] = new Character(-10, -10); // Set Position off the board
+	}
+
+	std::cout << "\n Squad Created\n";
+	std::cout << name << " Tile type =" << tileType << std::endl;
+}//----
+
+void Squad::createUnits(Level* pMap, int pSpawnAmount, int pInitialState)
+{
+	if (pSpawnAmount < maxUnits)
+	{
+		// Create the initial starting units staring at Home X Y
+		for (int i = 0; i < pSpawnAmount; i++)
+		{
+			// Create Instance & starting positions and spacing
+			int xPos = homeX + i;
+			int yPos = homeY + i;
+
+			// Set initial values		
+			units[i]->setType(tileType); // map tile type 
+			units[i]->setSpeed(rand() % 8); // Random Set Speed
+			units[i]->setState(pInitialState);
+			units[i]->setHeading(rand() % 8); // random initial Direction
+
+			// is the spawn postion empty and do we have resources 
+			if (pMap->getTile(xPos, yPos) == 0)
+			{
+				if (resources > 0)
+				{
+					pMap->setTile(xPos, yPos, tileType);
+					units[i]->isActive = true;
+					units[i]->setPosition(xPos, yPos);
+					std::cout << i << " unit spawned  ";
+
+					// Update Squad Stats
+					activeUnits++;
+					resources--;
+				}
+				else
+				{
+					std::cout << " \n Not enough resources to create a new unit";
+				}
+			}
+			else
+			{
+				std::cout << "Tile occupied, unit: " << i << " not created" << std::endl;
+				units[i]->isActive = false;
+			}
+		}
+	}
+}//---
+
+//=================================================================================
+
+
+//  Squad behaviours
+void Squad::manageSquad()
+{
+	// Only check these states every delay time
+	if (SDL_GetTicks64() > nextUpdateTime)
+	{
+		nextUpdateTime += updateDelay * 1000;
+
+		// Loop through all units
+		for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
+		{
+			if (units[i]->getIsActive()) // only check active units
+			{
+
+				// ---------------------------- Resources 
+
+				// check Unit Resources and Add to squad resources if any found
+				int resourcesFound = units[i]->getResources();
+				if (resourcesFound > 0)
+				{
+					resources += resourcesFound; // add to the sqaud resource
+					units[i]->addResource(-resourcesFound);
+					units[i]->setState(0);
+				}
+
+				// ---------------------------- Chase Speed
+				if (units[i]->getState() == 3)
+				{
+					units[i]->setSpeed(10);
+				}
+				else if (units[i]->getState() == 2)
+				{
+					units[i]->setSpeed(rand() % 8);
+				}
+
+			}
+
+			// ---------------------------- Check for idle units
+			if (units[i]->getState() == 0)
+			{
+				std::cout << std::endl << getName() << " UNIT: " << i << " is idle";
+
+				// add Something to do with the idle units
+
+			}
+
+			// ---------------------------- XXXXXXXX 
+			// something else only needed to be checked periodlically
+		}
+	}
+
+	// Spawn unit after time period
+	Uint64 spawn = SDL_GetTicks64() + 1000;
+	Uint64 cooldown = SDL_GetTicks64() + 30000;
+	if (spawn == cooldown)
+	{
+		spawn = SDL_GetTicks64() + 1000;
+
+	}
+
+	// check the amount of units assigned to a role and ressaign
+}
+
+
+
+//=================================================================================
+
+void Squad::update(Level* pMap, int pTargetX, int pTargetY, bool pLMouse)
+{
+	manageSquad();
+
+	// Set Target if mouse clicked
+	if (pLMouse)
+	{	// Check the tile is valid - On the Board 
+		if (pTargetX > 0 && pTargetX < BOARD_WIDTH && pTargetY > 0 && pTargetY < BOARD_HEIGHT)
+		{
+			for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
+			{
+				if (units[i]->getIsActive()) units[i]->setTarget(pTargetX, pTargetY);
+			}
+		}
+	}
+
+	// Update Active units
+	for (int i = 0; i < sizeof(units) / sizeof(units[0]); i++)
+	{
+		if (units[i]->getIsActive()) units[i]->update(pMap);
+	}
+}//-----
+
+
+//=================================================================================
+// Squad Getters and Setters 
+
+int Squad::getResources()
+{
+	return resources;
+};
+
+void Squad::addResource(int pResAmount)
+{
+	resources += pResAmount;
+}
+const char* Squad::getName()
+{
+	return name;
+}
+
+int Squad::getActiveUnits()
+{
+	return activeUnits;
+}
+void Squad::addActiveUnits(int pUnitsAdded)
+{
+	activeUnits += pUnitsAdded;
+}
+
+

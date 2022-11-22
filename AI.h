@@ -4,10 +4,6 @@
 
 // This will contain
 // Path finding 
-// Charcacter Management
-// Character Goals
-// 
-// Squad Managment
 
 //=================================================================================
 
@@ -17,8 +13,15 @@ class AI
 public:
 	
 	void getNextTile();
-	int findTileX(Level* pMap, int mouseX);
-	int findTileY(Level* pMap, int mouseY);
+	int findTileXFromMouseX(Level* pMap, int mouseX);
+	int findTileYFromMouseY(Level* pMap, int mouseY);
+
+	// RandomMove
+
+	// Move sideways n tiles
+
+	// Decision Tree
+
 
 private:
 

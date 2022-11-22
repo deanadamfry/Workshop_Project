@@ -18,8 +18,8 @@ public:
 	int getStartX();
 	int getStartY();
 
-	void SetMapTileSize(int size);
-	int GetMapTileSize();
+	void setMapTileSize(int size);
+	int getMapTileSize();
 
 
 private:

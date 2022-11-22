@@ -12,16 +12,16 @@ void AI::getNextTile()
 //=================================================================================
 
 
-int AI::findTileX(Level* pMap, int pMouseX)
+int AI::findTileXFromMouseX(Level* pMap, int pMouseX)
 {
-	int targetTileX = (pMouseX - pMap->getStartX()) / pMap->GetMapTileSize();
+	int targetTileX = (pMouseX - pMap->getStartX()) / pMap->getMapTileSize();
 
 	return targetTileX;
 }
 
-int AI::findTileY(Level* pMap, int pMouseY)
+int AI::findTileYFromMouseY(Level* pMap, int pMouseY)
 {
-	int targetTileY = (pMouseY - pMap->getStartY()) / pMap->GetMapTileSize();
+	int targetTileY = (pMouseY - pMap->getStartY()) / pMap->getMapTileSize();
 
 	return targetTileY;
 }

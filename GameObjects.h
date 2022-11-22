@@ -1,8 +1,6 @@
 #pragma once
-//#include "Game.h"
 #include "Levels.h"
 //=================================================================================
-
 class GameObject
 {
 public:
@@ -14,12 +12,12 @@ public:
 	SDL_Rect destRect = { 0,0,0,0 };
 	SDL_Renderer* renderer = nullptr;
 	void render();	
+
+	bool getIsActive() { return (isActive); };
 };
 
 
 //=================================================================================
-
-
 class Character : public GameObject
 {
 public:	
@@ -38,12 +36,15 @@ public:
 	void setHeading(int pDir);
 	int getHeading();
 	void setTarget(int x, int y);
+	void setPosition(int x, int y);
+	int getResources();
+	void addResource(int pResAmount);
+	
 
 private:
-	
-	// states 0: Idle 1: Roam 2: Wander
-	int state = 0;	
-	// Movement
+		
+	int state = 1;	 // states 0: Idle 1: Roam 2: Wander: 3:chase Target
+	int resources = 0;
 	bool isBusy = false;
 	float speed = 1;
 	float heading = 0;
@@ -55,7 +56,6 @@ private:
 
 //=================================================================================
 
-
 class Item : public GameObject
 {
 public:
@@ -66,4 +66,30 @@ private:
 };
 
 //=================================================================================
+class Squad
+{
+public:
+	Squad(const char* name, int type, int homeX, int homeY);
+	void createUnits(Level* pMap, int pSpawnAmount, int pInitialState) ;
+	void update(Level* pMap, int targetX, int targetY, bool MousePressed);
+	void manageSquad();	
+	int getResources();
+	void addResource(int pResAmount);
+	const char* getName();
+	int getActiveUnits();
+	void addActiveUnits(int pUnitsAdded);
 
+private:
+	const char* name = "team";
+	int tileType = 0; // number on Board Array
+	const int maxUnits = 50;
+	int activeUnits = 0;
+	int resources = 30;
+	int goal = 0; // explore | chase | defend |   balanced
+	int	homeX = 0, homeY = 0;
+	float nextUpdateTime = 0;
+	float updateDelay = 3; // time in seconds Game squad states are checked 
+
+	// create 50 units for this squad
+	Character* units[50] = {};
+};
