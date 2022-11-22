@@ -1,6 +1,6 @@
 // =======================================================
-// ---------- CI516  Game AI Project 1
-// ---------- David Dorrinton, UoB 2022
+// ---------- CI516  Game AI Project
+// ---------- Dean Fry, UoB 2022
 // =======================================================
 
 #include "Game.h" 
@@ -16,7 +16,7 @@ int main(int argc, char* args[])
 
 	game = new Game; // create an instance of the game
 	// IInitialise SDL 
-	game->init("CI516: AI SDL - DD 01", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	game->init("CI516: GAME AI SDL - Dean Fry", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	game->createGameObjects();
 
 	while (game->running())

@@ -6,7 +6,7 @@
 class GameObject
 {
 public:
-	int x, y;
+	int x{}, y{};
 	bool isActive = false;
 	SDL_Texture* spriteTexture = nullptr;
 	SDL_Rect srcRect = { 0,0,0,0 };

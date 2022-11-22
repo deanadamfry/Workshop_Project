@@ -68,6 +68,48 @@ void Game::createGameObjects()
 		}
 	}
 
+	// Create Arrays of Characters
+	for (int i = 0; i < sizeof(chars) / sizeof(chars[0]); i++)
+	{
+		// starting positions and spacing
+		int xPos = 8 + 2 * i;
+		int yPos = 4 + i;
+
+		chars[i] = new Character(xPos, yPos);
+		if (map->setTile(xPos, yPos, 6))
+		{
+			chars[i]->isActive = true;
+		}
+		else
+		{
+			std::cout << "Tile occupied, Character: " << i << " not created" << std::endl;
+			chars[i]->isActive = false;
+
+			// Create a function that checks adjacent tiles for empty ones
+		}
+	}
+
+	// Create Arrays of Items
+	for (int i = 0; i < sizeof(chars) / sizeof(chars[0]); i++)
+	{
+		// starting positions and spacing
+		int xPos = 20 + 2 * i;
+		int yPos = 14 + i;
+
+		chars[i] = new Character(xPos, yPos);
+		if (map->setTile(xPos, yPos, 7))
+		{
+			chars[i]->isActive = true;
+		}
+		else
+		{
+			std::cout << "Tile occupied, Character: " << i << " not created" << std::endl;
+			chars[i]->isActive = false;
+
+			// Create a function that checks adjacent tiles for empty ones
+		}
+	}
+
 	// show mouse click pos
 	targetMarker = new Item("assets/images/Square_Purple.png", 16, 16, 8);
 

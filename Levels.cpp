@@ -67,6 +67,7 @@ Level::Level()
 	water = TextureManager::LoadTexture("assets/images/Square_Blue.png");
 	char1 = TextureManager::LoadTexture("assets/images/Square_Yellow.png");
 	char2 = TextureManager::LoadTexture("assets/images/Square_Red.png");
+	item = TextureManager::LoadTexture("assets/images/Star-_Yellow.png");
 
 
 	loadMap(level1);
@@ -163,13 +164,11 @@ void Level::drawMap(int pTileSize)
 			case 6:
 				TextureManager::Draw(char2, src, dest);
 				break;
-
+			case 7:
+				TextureManager::Draw(item, src, dest);
 			default:
 				break;
 			}
 		}
 	}
-
-
-
 }//-----
