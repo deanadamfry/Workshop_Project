@@ -7,13 +7,20 @@ public:
 	Level();  // Constructor 
 
 	void loadMap(int mapArray[BOARD_HEIGHT][BOARD_WIDTH]);
-	void drawMap(int pTileSize);
+	void drawMap();
 
 	int  getTile(int x, int y);
 	bool setTile(int x, int y, int tileType);
 	
 	void moveMapX(int distance);
 	void moveMapY(int distance);
+
+	int getStartX();
+	int getStartY();
+
+	void SetMapTileSize(int size);
+	int GetMapTileSize();
+
 
 private:
 
@@ -32,4 +39,5 @@ private:
 	int map[BOARD_HEIGHT][BOARD_WIDTH];
 	int mapStartX = 96;
 	int mapStartY = 64;
+	int mapTileSize = SPRITE_SIZE;
 };

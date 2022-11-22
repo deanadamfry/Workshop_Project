@@ -1,5 +1,6 @@
 #include "AI.h"
 
+
 //=================================================================================
 
 void AI::getNextTile()
@@ -10,11 +11,21 @@ void AI::getNextTile()
 
 //=================================================================================
 
-void AI::findTilePosition()
-{
-	// find where the tile is on the board
 
+int AI::findTileX(Level* pMap, int pMouseX)
+{
+	int targetTileX = (pMouseX - pMap->getStartX()) / pMap->GetMapTileSize();
+
+	return targetTileX;
 }
+
+int AI::findTileY(Level* pMap, int pMouseY)
+{
+	int targetTileY = (pMouseY - pMap->getStartY()) / pMap->GetMapTileSize();
+
+	return targetTileY;
+}
+
 
 //=================================================================================
 

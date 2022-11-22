@@ -25,11 +25,13 @@ Mix_Chunk* shootSound = NULL;
 //Game Objects
 PlayerInput playerInput;
 Level* map;
+AI* gameAI;
+
 // Create array of chars
-Character* chars[5];
+Character* squadYellow[10];
+Character* squadRed[10];
 
 Item* targetMarker;
-int mapTileSize = SPRITE_SIZE;
 
 //=================================================================================
 //Constructor
@@ -43,76 +45,70 @@ Game::Game()
 void Game::createGameObjects()
 {
 	printf("************************* \nCreating GameObjects \n");
-
-	// Create Game Objects
+	// Create Game Level Map
 	map = new Level();
 
-	// Create Arrays of Characters
-	for (int i = 0; i < sizeof(chars) / sizeof(chars[0]); i++)
+	// Create Arrays of Characters  -- TEAM YELLOW -------------------------
+	for (int i = 0; i < sizeof(squadYellow) / sizeof(squadYellow[0]); i++)
 	{
-		// starting positions and spacing
-		int xPos = 6 + 2 * i;
-		int yPos = 7 + i;
+		// Create Instance & starting positions and spacing
+		int xPos = 10 + i;
+		int yPos = 10 + i;
+		squadYellow[i] = new Character(xPos, yPos);
 
-		chars[i] = new Character(xPos, yPos);
-		if (map->setTile(xPos, yPos, 5))
+		// Set initial values
+		squadYellow[i]->setType(5); // map tile type 
+		squadYellow[i]->setSpeed(2.5f);
+		squadYellow[i]->setState(2);
+		squadYellow[i]->setHeading(rand() % 8); // random initial Direction
+
+		// is the spawn postion empty
+		if (map->getTile(xPos, yPos) == 0)
 		{
-			chars[i]->isActive = true;
+			map->setTile(xPos, yPos, squadYellow[i]->getType());
+			squadYellow[i]->isActive = true;
 		}
 		else
 		{
 			std::cout << "Tile occupied, Character: " << i << " not created" << std::endl;
-			chars[i]->isActive = false;
-
-			// Create a function that checks adjacent tiles for empty ones
+			squadYellow[i]->isActive = false;
 		}
 	}
 
-	// Create Arrays of Characters
-	for (int i = 0; i < sizeof(chars) / sizeof(chars[0]); i++)
-	{
-		// starting positions and spacing
-		int xPos = 8 + 2 * i;
-		int yPos = 4 + i;
 
-		chars[i] = new Character(xPos, yPos);
-		if (map->setTile(xPos, yPos, 6))
+	// Create Arrays of Characters  -- TEAM RED    ------------------------
+
+	for (int i = 0; i < sizeof(squadRed) / sizeof(squadRed[0]); i++)
+	{		
+		// starting positions and instance
+		int xPos = 40 + i;
+		int yPos = 10 + i;
+		squadRed[i] = new Character(xPos, yPos);
+
+		// Set Tile Type to Add to the Map -- Red marker
+		squadRed[i]->setType(6);
+		squadRed[i]->setSpeed(5);
+		squadRed[i]->setState(3);
+		squadRed[i]->setHeading(rand() % 8); // random initial Direction
+
+		// is the spawn postion empty
+		if (map->getTile(xPos, yPos) == 0)
 		{
-			chars[i]->isActive = true;
+			map->setTile(xPos, yPos, squadRed[i]->getType());
+			squadRed[i]->isActive = true;
 		}
 		else
 		{
 			std::cout << "Tile occupied, Character: " << i << " not created" << std::endl;
-			chars[i]->isActive = false;
-
-			// Create a function that checks adjacent tiles for empty ones
+			squadRed[i]->isActive = false;
 		}
 	}
 
-	// Create Arrays of Items
-	for (int i = 0; i < sizeof(chars) / sizeof(chars[0]); i++)
-	{
-		// starting positions and spacing
-		int xPos = 20 + 2 * i;
-		int yPos = 14 + i;
 
-		chars[i] = new Character(xPos, yPos);
-		if (map->setTile(xPos, yPos, 7))
-		{
-			chars[i]->isActive = true;
-		}
-		else
-		{
-			std::cout << "Tile occupied, Character: " << i << " not created" << std::endl;
-			chars[i]->isActive = false;
+	// Create other Object ------------------------------------------------
 
-			// Create a function that checks adjacent tiles for empty ones
-		}
-	}
-
-	// show mouse click pos
-	targetMarker = new Item("assets/images/Square_Purple.png", 16, 16, 8);
-
+	// show mouse click pos with target Marker
+	targetMarker = new Item("assets/images/Square_Purple.png", 16, 16, 8);	
 }//---
 
 //=================================================================================
@@ -131,19 +127,50 @@ void Game::playAgainScreen()
 //=================================================================================
 
 void Game::updateGameObjects()
-{
-	// Move Target Marker
-	if (playerInput.mouseL)
+{	
+	//  Manage Yellow Squad  --------
+
+	for (int i = 0; i < sizeof(squadYellow) / sizeof(squadYellow[0]); i++)
 	{
-		targetMarker->x = playerInput.mouseX;
-		targetMarker->y = playerInput.mouseY;	
+		squadYellow[i]->update(map);
 	}
 
-	// Update Characters when functions added
-	// Loop through array	
+	//  Manage red Squad --------
 
+	// Set Target 
+	if (playerInput.mouseL)
+	{	// Move the target Marker
+		targetMarker->x = playerInput.mouseX;
+		targetMarker->y = playerInput.mouseY;
+
+		// Set the Target for the Squad Members
+		for (int i = 0; i < sizeof(squadRed) / sizeof(squadRed[0]); i++)
+		{	// Use AI Class to get tile from cursor Pos
+			int targetTileX = gameAI->findTileX(map, playerInput.mouseX);
+			int targetTileY = gameAI->findTileY(map, playerInput.mouseY);		
+			// Check the tile is valid - On the Board 
+			if (targetTileX > 0 && targetTileX < BOARD_WIDTH 
+				&& targetTileY > 0 && targetTileY < BOARD_HEIGHT)
+			{	
+				squadRed[i]->setTarget(targetTileX, targetTileY);
+
+				// only Change if idle
+				if (squadRed[i]->getState() == 0) // idle
+				{
+					//squadRed[i]->setState(3); set idle units to chase
+					//squadRed[i]->setTarget(targetTileX, targetTileY);
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < sizeof(squadRed) / sizeof(squadRed[0]); i++) 
+	{
+		squadRed[i]->update(map);
+	}
+
+	// Modify Display
 	adjustMapDisplay();
-
 }//---
 
 
@@ -152,17 +179,15 @@ void Game::updateGameObjects()
 void Game::adjustMapDisplay()
 {
 	// key for zoom in (= / +)  out (-)
-	if (playerInput.keyPressed == SDLK_EQUALS || playerInput.mouseWheelUp == true)
-		if (mapTileSize < 18) mapTileSize++;
+	if (playerInput.keyPressed == SDLK_EQUALS || playerInput.mouseWheelUp == true) map->SetMapTileSize(+1);
 
-	if (playerInput.keyPressed == SDLK_MINUS || playerInput.mouseWheelDown == true)
-		if (mapTileSize > 10) mapTileSize--;
+	if (playerInput.keyPressed == SDLK_MINUS || playerInput.mouseWheelDown == true) map->SetMapTileSize(-1);
 
-	// Move Board by changeing draw start position
-	if (playerInput.keyPressed == SDLK_LEFT) map->moveMapX(mapTileSize);
-	if (playerInput.keyPressed == SDLK_RIGHT) map->moveMapX(-mapTileSize);
-	if (playerInput.keyPressed == SDLK_UP) map->moveMapY(mapTileSize);
-	if (playerInput.keyPressed == SDLK_DOWN) map->moveMapY(-mapTileSize);
+	// Move Board UPLR
+	if (playerInput.keyPressed == SDLK_LEFT || playerInput.keyPressed == SDLK_a) map->moveMapX(1);
+	if (playerInput.keyPressed == SDLK_RIGHT || playerInput.keyPressed == SDLK_d) map->moveMapX(-1);
+	if (playerInput.keyPressed == SDLK_UP || playerInput.keyPressed == SDLK_w) map->moveMapY(1);
+	if (playerInput.keyPressed == SDLK_DOWN || playerInput.keyPressed == SDLK_s) map->moveMapY(-1);
 }//---
 
 
@@ -173,13 +198,10 @@ void Game::render()
 	SDL_RenderClear(renderer);
 
 	// Map Tiles
-	map->drawMap(mapTileSize);
+	map->drawMap();
 
 	// objects
 	targetMarker->render();
-
-	// Characters
-	
 
 	updateGUI();
 
@@ -189,7 +211,7 @@ void Game::render()
 
 //=================================================================================
 
-void Game::handleEvents() // Add Mouse Movement
+void Game::handleEvents() // Updates Player Input
 {
 	// Reset Inputs
 	playerInput.keyPressed = NULL;
@@ -243,12 +265,15 @@ void Game::updateGUI()
 	screenText = " Mouse: " + std::to_string(playerInput.mouseL);
 	screenText += " x: " + std::to_string(playerInput.mouseX);
 	screenText += " y: " + std::to_string(playerInput.mouseY);
+	screenText += "\n-----------\n Map Start: " + std::to_string(map->getStartX()) + " " + std::to_string(map->getStartY());
 
 	// Create Text Texture
-	textSurface = TTF_RenderText_Blended(font, screenText.c_str(), textColour);
+	//textSurface = TTF_RenderText_Blended(font, screenText.c_str(), textColour);
+	textSurface = TTF_RenderText_Blended_Wrapped(font, screenText.c_str(), textColour, 0);
+
 	textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 	SDL_QueryTexture(textTexture, NULL, NULL, &textW, &textH);
-	textRect = { 600, 8, textW, textH };
+	textRect = { 648, 8, textW, textH };
 
 	// Copy Text Texture to Renderer
 	SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
@@ -277,7 +302,7 @@ void Game::init(const char* pTitle, int pXpos, int pYpos, int pWidth, int pHeigh
 		renderer = SDL_CreateRenderer(gameWindow, -1, 0);
 		if (renderer)
 		{
-			SDL_SetRenderDrawColor(renderer, 64, 64, 64, 0);
+			SDL_SetRenderDrawColor(renderer, 128, 128, 128, 0);
 			std::cout << "Renderer Created \n";
 		}
 		// Initialise Fonts

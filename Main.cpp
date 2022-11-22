@@ -1,5 +1,5 @@
 // =======================================================
-// ---------- CI516  Game AI Project
+// ---------- CI516  Game AI Project 1.3
 // ---------- Dean Fry, UoB 2022
 // =======================================================
 
@@ -14,8 +14,8 @@ int main(int argc, char* args[])
 	Uint32 frameStartTime;
 	int frameTime;
 
-	game = new Game; // create an instance of the game
-	// IInitialise SDL 
+	game = new Game; // Create an instance of the game
+	// Initialise SDL 
 	game->init("CI516: GAME AI SDL - Dean Fry", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	game->createGameObjects();
 
@@ -23,7 +23,7 @@ int main(int argc, char* args[])
 	{
 		frameStartTime = SDL_GetTicks();
 
-		// Main Game functions
+		// Main Game Functions
 		game->handleEvents();
 		game->updateGameObjects();
 		game->render();

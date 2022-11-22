@@ -1,4 +1,5 @@
 #pragma once
+#include "Levels.h"
 
 
 // This will contain
@@ -14,9 +15,10 @@
 class AI
 {
 public:
-
+	
 	void getNextTile();
-	void findTilePosition();
+	int findTileX(Level* pMap, int mouseX);
+	int findTileY(Level* pMap, int mouseY);
 
 private:
 

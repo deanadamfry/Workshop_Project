@@ -62,17 +62,16 @@ int level1[50][60] = {
 Level::Level()
 {
 	// Load tile images
-	empty = TextureManager::LoadTexture("assets/images/Square_Grey.png");
-	wall = TextureManager::LoadTexture("assets/images/Square_Green.png");
+	empty = TextureManager::LoadTexture("assets/images/square_cross_grey.png");
+	wall = TextureManager::LoadTexture("assets/images/Square_Grey.png");
 	water = TextureManager::LoadTexture("assets/images/Square_Blue.png");
-	char1 = TextureManager::LoadTexture("assets/images/Square_Yellow.png");
-	char2 = TextureManager::LoadTexture("assets/images/Square_Red.png");
-	item = TextureManager::LoadTexture("assets/images/Star-_Yellow.png");
+	char1 = TextureManager::LoadTexture("assets/images/Pawn_Yellow.png");
+	char2 = TextureManager::LoadTexture("assets/images/Pawn_Red.png");
 
 
 	loadMap(level1);
 	src.x = src.y = 0;
-	src.h = src.w = SPRITE_SIZE;
+	src.h = src.w = SPRITE_TEX_SIZE;
 	dest.x = src.x;
 	dest.y = src.y;
 	dest.h = dest.w = SPRITE_SIZE;
@@ -99,35 +98,57 @@ void Level::loadMap(int pNewMap[BOARD_HEIGHT][BOARD_WIDTH])
 int Level::getTile(int x, int y)
 {
 	// Return the current tile occupant
-	return map[x][y];
+	return map[y][x];
 }
 
 bool Level::setTile(int x, int y, int pTileType)
 {
-	//	update tile if currently empty
-	if (map[y][x] == 0)
-	{
-		map[y][x] = pTileType;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	map[y][x] = pTileType;
+	return true;
 };
 
 
 //=================================================================================
+// MAPS POSITION and SIZE
+
+int Level::getStartX()
+{
+	return mapStartX;
+};
+
+int Level::getStartY()
+{
+	return mapStartY;
+};
+
+
+int Level::GetMapTileSize()
+{
+	return mapTileSize;
+};
+
+void Level::SetMapTileSize(int pSizeIncrease)
+{
+	if (pSizeIncrease > 0)
+	{
+		if (mapTileSize < 34) mapTileSize++;
+	}
+	else if (pSizeIncrease < 0)
+	{
+		if (mapTileSize > 12) mapTileSize--;
+	}
+};
 
 
 void Level::moveMapX(int pDistance)
 {
-	mapStartX += pDistance;
+	// Add Some Screen Limits checkinng
+	mapStartX += pDistance * mapTileSize;
 };
 
 void Level::moveMapY(int pDistance)
 {
-	mapStartY += pDistance;
+	mapStartY += pDistance * mapTileSize;
 };
 
 
@@ -135,7 +156,7 @@ void Level::moveMapY(int pDistance)
 //=================================================================================
 
 
-void Level::drawMap(int pTileSize)
+void Level::drawMap()
 {
 	int mapTileType = 0;
 
@@ -144,8 +165,10 @@ void Level::drawMap(int pTileSize)
 		for (int col = 0; col < BOARD_WIDTH; col++)
 		{
 			mapTileType = map[row][col];
-			dest.x = mapStartX + col * pTileSize;
-			dest.y = mapStartY + row * pTileSize;
+			dest.x = mapStartX + col * mapTileSize;
+			dest.y = mapStartY + row * mapTileSize;
+			dest.w = mapTileSize;
+			dest.h = mapTileSize;
 
 			switch (mapTileType)
 			{
@@ -164,11 +187,13 @@ void Level::drawMap(int pTileSize)
 			case 6:
 				TextureManager::Draw(char2, src, dest);
 				break;
-			case 7:
-				TextureManager::Draw(item, src, dest);
+
 			default:
 				break;
 			}
 		}
 	}
+
+
+
 }//-----
